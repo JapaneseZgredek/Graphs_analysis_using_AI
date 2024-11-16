@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-from core.logging_config import logger
+from backend.core.logging_config import logger
 templates = Jinja2Templates(directory='templates')
 
 router = APIRouter()
