@@ -1,12 +1,13 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from core.logging_config import logger
+from backend.core.logging_config import logger
+from backend.core.database import Base, engine
+from backend.models import user, uploaded_file
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+Base.metadata.create_all(bind=engine)
 
 @app.on_event("startup")
 async def startup():
     logger.info('Start up called')
 
-app.include_router(backend.routers.home.router)
+# app.include_router(routers.home.router)
