@@ -10,7 +10,7 @@ from backend.core.logging_config import logger
 
 router = APIRouter()
 
-# DTO classes
+# --- DTO MODELS ---
 class UploadedFileCreate(BaseModel):
     user_id: int
     file_name: str
@@ -27,6 +27,8 @@ class UploadedFileRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- CRUD ENDPOINTS ---
 
 # CREATE: Upload file
 @router.post('/files', response_model=UploadedFileRead)
