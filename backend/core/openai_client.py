@@ -32,3 +32,30 @@ class OpenAIClient:
 
         except Exception as e:
             raise Exception(f"OpenAI API Error: {e}")
+
+    def analyze_image_with_description_base64(self, image_data: bytes, description: str, prompt: str, mime_type: str = "image/png"):
+        try:
+            base64_image = base64.b64encode(image_data).decode("utf-8")
+            data_url = f"data:{mime_type};base64,{base64_image}"
+            prompt += base64.b64encode(description.encode("utf-8")).decode("utf-8")
+            response = openai.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": data_url},
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=300
+            )
+
+            return response.choices[0].message.content
+
+        except Exception as e:
+            raise Exception(f"OpenAI API Error: {e}")

@@ -120,3 +120,9 @@ def delete_file(file_id: int, db: Session = Depends(get_db)):
 def read_all_files(db: Session = Depends(get_db)):
     logger.info('Reading all files')
     return db.query(UploadedFile).all()
+
+# READ ALL USERS GRAPHS: Reads all User's graphs ordered by newest
+@router.get('/graphs/user/{user_id}', response_model=List[UploadedFileRead])
+def read_user_files(user_id: int, db: Session = Depends(get_db)):
+    logger.info(f"Reading all user's files with id: {user_id}")
+    return db.query(UploadedFile).filter(UploadedFile.owner_id == user_id).all()
