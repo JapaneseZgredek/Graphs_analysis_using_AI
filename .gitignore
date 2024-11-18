@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 frontend/package-lock.json
 frontend/package.json
+temp_graph_ai_1.png
+temp_file.png

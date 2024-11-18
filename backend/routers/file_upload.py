@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
+from starlette.responses import FileResponse
+
 from backend.models.uploaded_file import UploadedFile
 from backend.models.user import User
 from pydantic import BaseModel
@@ -72,7 +74,11 @@ def get_file(file_id: int, db: Session = Depends(get_db)):
         logger.error(f'File with id {file_id} not found')
         raise HTTPException(status_code=404, detail='File not found.')
 
-    return uploaded_file
+    temp_file_path = f'./temp_file.png'
+    with open(temp_file_path, "wb") as temp_file:
+        temp_file.write(uploaded_file.file_data)
+
+    return FileResponse(temp_file_path, media_type="image/png")
 
 
 # UPDATE: Actualize analysis result for file
