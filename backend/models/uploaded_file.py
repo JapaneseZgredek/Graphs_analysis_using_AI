@@ -12,7 +12,7 @@ class UploadedFile(Base):
     file_hash = Column(String(255), nullable=False, unique=True)
     analysis_result = Column(String(255), nullable=True)
     uploaded_at = Column(DateTime, default=datetime.now)
-    does_match = Column(Boolean, nullable=True)
+    does_match = Column(Boolean, nullable=True, default=False)
     uploaded_text = Column(String(255), nullable=True)
 
     # Relation with User table

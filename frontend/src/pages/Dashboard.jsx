@@ -1,118 +1,124 @@
-import React, { useEffect, useState } from "react";
-import NavBar from "../components/NavBar";
-import "../styles/global.css";
+import React, { useState, useEffect } from 'react';
+import NavBar from '../components/NavBar';
+import '../styles/global.css';
 
 const Dashboard = () => {
-    const [userEmail, setUserEmail] = useState("");
     const [userFiles, setUserFiles] = useState([]);
     const [selectedFile, setSelectedFile] = useState(null);
-    const [showModal, setShowModal] = useState(false);
+    const [error, setError] = useState("");
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Pobranie danych użytkownika
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                const response = await fetch("http://127.0.0.1:8000/api/users/me", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+    const fetchUserFiles = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch("http://127.0.0.1:8000/api/user_files", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-                if (!response.ok) {
-                    throw new Error("Failed to fetch user data");
-                }
-
-                const userData = await response.json();
-                setUserEmail(userData.email);
-            } catch (err) {
-                console.error("Error fetching user data:", err.message);
+            if (!response.ok) {
+                throw new Error("Failed to fetch user files.");
             }
-        };
 
-        fetchUserData();
-    }, []);
+            const data = await response.json();
+            setUserFiles(data);
+        } catch (err) {
+            console.error("Error fetching user files:", err.message);
+            setError(err.message);
+        }
+    };
 
-    // Pobranie plików użytkownika
     useEffect(() => {
-        const fetchUserFiles = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                const response = await fetch("http://127.0.0.1:8000/api/files", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to fetch user files");
-                }
-
-                const files = await response.json();
-                setUserFiles(files);
-            } catch (err) {
-                console.error("Error fetching user files:", err.message);
-            }
-        };
-
         fetchUserFiles();
     }, []);
 
-    // Kliknięcie kafelka
-    const handleFileClick = (file) => {
+    const handleTileClick = (file) => {
         setSelectedFile(file);
-        setShowModal(true);
+        setIsModalOpen(true);
     };
 
-    // Zamknięcie modala
     const closeModal = () => {
+        setIsModalOpen(false);
         setSelectedFile(null);
-        setShowModal(false);
     };
 
-    return (
+    const handleDeleteFile = async (fileId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch (`http://127.0.0.1:8000/api/files/${fileId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete file.")
+            }
+
+            fetchUserFiles();
+        } catch (err) {
+            console.error("Error deleting file:", err.message);
+            setError(err.message);
+        }
+    };
+
+     return (
         <div className="gradient-background">
             <NavBar />
             <div className="dashboard-container">
-                <div className="greeting">Hello, {userEmail}</div>
+                <h2 className="dashboard-header">Hello, Welcome to Your Dashboard</h2>
+                {error && <div className="error-message">{error}</div>}
                 <div className="file-grid">
                     {userFiles.map((file) => (
                         <div
                             key={file.id}
                             className="file-tile"
-                            onClick={() => handleFileClick(file)}
                         >
+                            <div
+                                className="delete-icon"
+                                onClick={() => handleDeleteFile(file.id)}
+                                title="Delete File"
+                            >
+                                &times;
+                            </div>
                             <img
-                                src={`data:image/png;base64,${btoa(
-                                    new Uint8Array(file.file_data).reduce(
-                                        (data, byte) => data + String.fromCharCode(byte),
-                                        ""
-                                    )
-                                )}`}
+                                src={file.file_preview}
                                 alt={file.file_name}
-                                className="file-thumbnail"
+                                className="file-preview-img"
+                                onClick={() => handleTileClick(file)}
                             />
-                            <div className="file-name">{file.file_name}</div>
+                            <p className="file-name">{file.file_name}</p>
                         </div>
                     ))}
                 </div>
-
-                {/* Modal */}
-                {showModal && (
-                    <div className="modal-overlay">
-                        <div className="modal-content">
-                            <h2>File Details</h2>
-                            {selectedFile && (
-                                <div className="file-details">
-                                    <p><strong>File Name:</strong> {selectedFile.file_name}</p>
-                                    <p><strong>Analysis Result:</strong> {selectedFile.analysis_result || "N/A"}</p>
-                                    <p><strong>Uploaded At:</strong> {new Date(selectedFile.uploaded_at).toLocaleString()}</p>
-                                    <p><strong>Does Match:</strong> {selectedFile.does_match ? "Yes" : "No"}</p>
-                                </div>
+            </div>
+            {isModalOpen && selectedFile && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <button className="close-modal" onClick={closeModal}>
+                            &times;
+                        </button>
+                        <h3 className="modal-header">File Details</h3>
+                        <div className="modal-body">
+                            <img
+                                src={selectedFile.file_preview}
+                                alt={selectedFile.file_name}
+                                className="modal-image"
+                            />
+                            <p><strong>File Name:</strong> {selectedFile.file_name}</p>
+                            <p><strong>Uploaded At:</strong> {new Date(selectedFile.uploaded_at).toLocaleString()}</p>
+                            {selectedFile.analysis_result && (
+                                <p><strong>Analysis Result:</strong> {selectedFile.analysis_result}</p>
                             )}
-                            <button className="btn btn-secondary" onClick={closeModal}>
-                                Close
-                            </button>
+                            {selectedFile.uploaded_text && (
+                                <p><strong>Description:</strong> {selectedFile.uploaded_text}</p>
+                            )}
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

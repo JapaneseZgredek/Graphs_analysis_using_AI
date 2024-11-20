@@ -31,8 +31,8 @@ class UploadedFileRead(BaseModel):
     file_name: str
     uploaded_at: datetime
     analysis_result: Optional[str]
-    file_preview: Optional[str]
     uploaded_text: Optional[str]
+    file_preview: Optional[str]
 
     class Config:
         from_attributes = True
@@ -44,36 +44,33 @@ class UploadFileRequest(BaseModel):
     uploaded_text: Optional[str]
 
 
-@router.get("/api/user_files", response_model=List[UploadedFileRead])
-def get_user_files(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@router.get("/user_files", response_model=list[UploadedFileRead])
+def get_user_files(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     logger.info(f"Fetching files for user: {current_user.email}")
+    user_files = db.query(UploadedFile).filter(UploadedFile.owner_id == current_user.id).all()
 
-    user_files = db.query(UploadedFile).filter(UploadedFile.owner_id == current_user.id).first()
-
-    if not user_files:
-        logger.error(f"No files found for user: {current_user.email}")
-        raise HTTPException(status_code=404, detail="No files found for this user.")
-
-    response = []
+    # Dodawanie podglądu obrazu w formacie Base64
+    files_with_preview = []
     for file in user_files:
-        file_preview = base64.b64encode(file.file_data).decode('utf-8') if file.file_data else None
-        response.append({
-            "id": file.id,
-            "file_name": file.file_name,
-            "uploaded_at": file.uploaded_at,
-            "analysis_result": file.analysis_result,
-            "file_preview": file_preview,
-            "uploaded_text": file.uploaded_text
-        })
+        file_preview = base64.b64encode(file.file_data).decode('utf-8')
+        files_with_preview.append(
+            UploadedFileRead(
+                id=file.id,
+                file_name=file.file_name,
+                uploaded_at=file.uploaded_at,
+                analysis_result=file.analysis_result,
+                file_preview=f"data:image/png;base64,{file_preview}",
+                uploaded_text=file.uploaded_text
+            )
+        )
+    return files_with_preview
 
-    return response
 
-
-@router.get("/api/user_files/{file_id}", response_model=UploadedFileRead)
+@router.get("/user_files/{file_id}", response_model=UploadedFileRead)
 def get_file_details(file_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     logger.info(f"Fetching details for file ID: {file_id}, user: {current_user.email}")
 
-    file_record = db.query(UploadedFile).filtert(
+    file_record = db.query(UploadedFile).filter(
         UploadedFile.owner_id == current_user.id,
         UploadedFile.id == file_id,
     ).first()
@@ -89,7 +86,7 @@ def get_file_details(file_id: int, current_user: User = Depends(get_current_user
         "file_name": file_record.file_name,
         "uploaded_at": file_record.uploaded_at,
         "analysis_result": file_record.analysis_result,
-        "file_preview": file_preview,
+        "file_preview": f"data:image/png;base64,{file_preview}",
         "uploaded_text": file_record.uploaded_text
     }
 
@@ -111,7 +108,14 @@ async def upload_image_to_database(request: UploadFileRequest, db: Session = Dep
     existing_file = db.query(UploadedFile).filter(UploadedFile.file_hash == file_hash).first()
     if existing_file:
         logger.info(f"File with hash {file_hash} already exists in database: {existing_file}")
-        return existing_file
+        return UploadedFileRead(
+            id=existing_file.id,
+            file_name=existing_file.file_name,
+            uploaded_at=existing_file.uploaded_at,
+            analysis_result=existing_file.analysis_result,
+            file_preview=f"data:image/png;base64,{base64.b64encode(existing_file.file_data).decode()}",
+            uploaded_text=existing_file.uploaded_text,
+        )
 
     user = db.query(User).filter(User.id == request.user_id).first()
     if not user:
@@ -131,7 +135,16 @@ async def upload_image_to_database(request: UploadFileRequest, db: Session = Dep
     db.refresh(uploaded_file)
 
     logger.info(f"File uploaded successfully: {uploaded_file.id}")
-    return uploaded_file
+
+    # Add the file preview to the response
+    return UploadedFileRead(
+        id=uploaded_file.id,
+        file_name=uploaded_file.file_name,
+        uploaded_at=uploaded_file.uploaded_at,
+        analysis_result=uploaded_file.analysis_result,
+        file_preview=f"data:image/png;base64,{base64.b64encode(uploaded_file.file_data).decode()}",
+        uploaded_text=uploaded_file.uploaded_text,
+    )
 
 
 # READ: Get file by ID
