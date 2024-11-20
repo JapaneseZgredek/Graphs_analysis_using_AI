@@ -25,6 +25,14 @@ const NavBar = () => {
                         </li>
                         <li className="nav-item">
                             <NavLink
+                                className={({ isActive }) => "nav-link" + (isActive ? " active": "")}
+                                to="/generate-description"
+                            >
+                                Generate Description
+                            </NavLink>
+                        </li>
+                        <li className="nav-item">
+                            <NavLink
                                 className={({isActive}) => "nav-link" + (isActive ? " active" : "")}
                                 to="/upload"
                             >
