@@ -1,105 +1,83 @@
-import React from "react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
-import { TextField, Button, Box, Typography } from "@mui/material";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import bcrypt from "bcryptjs";
+// src/components/RegisterForm.js
+import React from 'react';
+import NavBar from '../NavBar';
+import { useForm } from 'react-hook-form';
+import '../../styles/global.css';
+import { Link } from 'react-router-dom';
 
 const RegisterForm = () => {
-    const navigate = useNavigate();
+    const { register, handleSubmit, watch, formState: { errors } } = useForm();
+    const password = watch("password");
 
-    const registerSchema = Yup.object().shape({
-        email: Yup.string().email("Invalid email").required("Email is required"),
-        password: Yup.string()
-            .min(6, "Password must be at least 6 characters")
-            .required("Password is required"),
-        confirmPassword: Yup.string()
-            .oneOf([Yup.ref("password"), null],  "Passwords must match")
-            .required("Confirm Password is required"),
-    });
-
-    const handleRegister = async (values) => {
-        try {
-            const hashedPassword = bcrypt.hashSync(values.password, 10);
-
-            const response = await axios.post("/api/register", {
-                email: values.email,
-                hashed_password: hashedPassword,
-            });
-
-            console.log("Registration successful:", response.data);
-            navigate("/login");
-        } catch (error) {
-            console.error("Registration failed:", error.response?.data || error);
-        }
+    const onSubmit = (data) => {
+        console.log("Register Data:", data);
     };
 
     return (
-         <Box sx={{ maxWidth: 400, margin: "auto", marginTop: 10 }}>
-            <Typography variant="h4" gutterBottom>
-                Register
-            </Typography>
-            <Formik
-                initialValues={{
-                    email: "",
-                    password: "",
-                    confirmPassword: "",
-                }}
-                validationSchema={registerSchema}
-                onSubmit={handleRegister}
-            >
-                {({ handleSubmit }) => (
-                    <Form onSubmit={handleSubmit}>
-                        <Field
-                            as={TextField}
-                            name="email"
-                            label="Email"
-                            fullWidth
-                            margin="normal"
-                            variant="outlined"
-                        />
-                        <ErrorMessage name="email" component="div" style={{ color: "red" }} />
-
-                        <Field
-                            as={TextField}
-                            name="password"
-                            label="Password"
-                            type="password"
-                            fullWidth
-                            margin="normal"
-                            variant="outlined"
-                        />
-                        <ErrorMessage name="password" component="div" style={{ color: "red" }} />
-
-                        <Field
-                            as={TextField}
-                            name="confirmPassword"
-                            label="Confirm Password"
-                            type="password"
-                            fullWidth
-                            margin="normal"
-                            variant="outlined"
-                        />
-                        <ErrorMessage
-                            name="confirmPassword"
-                            component="div"
-                            style={{ color: "red" }}
-                        />
-
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            color="primary"
-                            fullWidth
-                            sx={{ marginTop: 2 }}
-                        >
-                            Register
-                        </Button>
-                    </Form>
-                )}
-            </Formik>
-        </Box>
+        <div className="gradient-background">
+            <NavBar />
+            <div className="centered-content">
+                <div className="form-container">
+                    <h2 className="text-center">Sign Up</h2>
+                    <form onSubmit={handleSubmit(onSubmit)}>
+                        <div className="mb-3">
+                            <label htmlFor="email" className="form-label">Email address</label>
+                            <input
+                                {...register("email", {
+                                    required: "Email is required",
+                                    pattern: {
+                                        value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                                        message: "Invalid email address"
+                                    }
+                                })}
+                                type="email"
+                                className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                                id="email"
+                                placeholder="Enter your email"
+                            />
+                            {errors.email && <div className="invalid-feedback">{errors.email.message}</div>}
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="password" className="form-label">Password</label>
+                            <input
+                                {...register("password", {
+                                    required: "Password is required",
+                                    minLength: {
+                                        value: 6,
+                                        message: "Password must be at least 6 characters long"
+                                    }
+                                })}
+                                type="password"
+                                className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                                id="password"
+                                placeholder="Enter your password"
+                            />
+                            {errors.password && <div className="invalid-feedback">{errors.password.message}</div>}
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+                            <input
+                                {...register("confirmPassword", {
+                                    required: "Please confirm your password",
+                                    validate: value => value === password || "Passwords do not match"
+                                })}
+                                type="password"
+                                className={`form-control ${errors.confirmPassword ? "is-invalid" : ""}`}
+                                id="confirmPassword"
+                                placeholder="Confirm your password"
+                            />
+                            {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword.message}</div>}
+                        </div>
+                        <div className="d-grid">
+                            <button type="submit" className="btn btn-primary">Sign Up</button>
+                        </div>
+                    </form>
+                    <p className="text-center mt-3">
+                        Already have an account? <Link to="/login" className="text-white">Log in here</Link>.
+                    </p>
+                </div>
+            </div>
+        </div>
     );
 };
 

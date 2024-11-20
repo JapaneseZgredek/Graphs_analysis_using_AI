@@ -1,0 +1,31 @@
+.gradient-background {
+    min-height: 100vh;
+    background: linear-gradient(45deg, #6a11cb, #2575fc);
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.centered-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-white {
+    color: white;
+}
