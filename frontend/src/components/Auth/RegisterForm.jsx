@@ -1,16 +1,37 @@
-// src/components/RegisterForm.js
-import React from 'react';
+import React, { useState } from 'react';
 import NavBar from '../NavBar';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/global.css';
 import { Link } from 'react-router-dom';
 
 const RegisterForm = () => {
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const password = watch("password");
+    const navigate = useNavigate();
 
-    const onSubmit = (data) => {
-        console.log("Register Data:", data);
+    const [serverError, setServerError] = useState("");
+
+    const onSubmit = async (data) => {
+        try {
+            const response = await fetch("http://127.0.0.1:8000/api/register", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    email: data.email,
+                    password: data.password
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || "Registration failed");
+            }
+
+            navigate("/login");
+        } catch (error) {
+            setServerError(error.message);
+        }
     };
 
     return (
@@ -68,6 +89,7 @@ const RegisterForm = () => {
                             />
                             {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword.message}</div>}
                         </div>
+                        {serverError && <div className="text-danger mb-3">{serverError}</div>}
                         <div className="d-grid">
                             <button type="submit" className="btn btn-primary">Sign Up</button>
                         </div>

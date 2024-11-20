@@ -2,16 +2,22 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from backend.core.database import get_db
 from backend.models.user import User
 from passlib.context import CryptContext
 from backend.core.logging_config import logger
+from jose import JWTError, jwt
 
 router = APIRouter()
 
 # Configuration of hashing passwords
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT secret and expiration settings
+SECRET_KEY = "your_secret_key"  # Change this to a strong secret key
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # --- DTO MODELS ---
 class UserCreate(BaseModel):
@@ -30,11 +36,65 @@ class UserRead(BaseModel):
     class Config:
         from_attributes = True
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 # --- AUXILIARY FUNCTIONS ---
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 # --- CRUD ENDPOINTS ---
+
+# LOGIN: Authenticate user and teturn JWT Token
+@router.post('/login', response_model=Token)
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    logger.info(f"Attempting to log in user: {user.email}")
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        logger.error(f"Invalid credentials for user: {user.email}")
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+
+    access_token = create_access_token(data={"sub": db_user.email})
+    logger.info(f"User {user.email} successfully logged in")
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# REGISTER: Create a new user
+@router.post('/register', response_model=UserRead)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    logger.info(f"Registering user: {user.email}")
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        logger.error(f"User with email {user.email} already exists")
+        raise HTTPException(status_code=400, detail='Email already registered.')
+
+    hashed_password = hash_password(user.password)
+    new_user = User(
+        email=user.email,
+        hashed_password=hashed_password,
+        created_at=datetime.now()
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    logger.info(f"User {user.email} successfully registered")
+    return new_user
 
 # CREATE: Creating User
 @router.post('/users', response_model=UserRead)
