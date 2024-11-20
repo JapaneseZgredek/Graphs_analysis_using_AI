@@ -11,6 +11,7 @@ from typing import Optional, List
 from datetime import datetime
 from backend.core.database import get_db
 from backend.core.logging_config import logger
+from backend.core.jwt_auth import JWTError, get_current_user
 
 router = APIRouter()
 
@@ -30,6 +31,8 @@ class UploadedFileRead(BaseModel):
     file_name: str
     uploaded_at: datetime
     analysis_result: Optional[str]
+    file_preview: Optional[str]
+    uploaded_text: Optional[str]
 
     class Config:
         from_attributes = True
@@ -39,6 +42,56 @@ class UploadFileRequest(BaseModel):
     file_name: str
     file: str  # Base64-encoded file
     uploaded_text: Optional[str]
+
+
+@router.get("/api/user_files", response_model=List[UploadedFileRead])
+def get_user_files(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"Fetching files for user: {current_user.email}")
+
+    user_files = db.query(UploadedFile).filter(UploadedFile.owner_id == current_user.id).first()
+
+    if not user_files:
+        logger.error(f"No files found for user: {current_user.email}")
+        raise HTTPException(status_code=404, detail="No files found for this user.")
+
+    response = []
+    for file in user_files:
+        file_preview = base64.b64encode(file.file_data).decode('utf-8') if file.file_data else None
+        response.append({
+            "id": file.id,
+            "file_name": file.file_name,
+            "uploaded_at": file.uploaded_at,
+            "analysis_result": file.analysis_result,
+            "file_preview": file_preview,
+            "uploaded_text": file.uploaded_text
+        })
+
+    return response
+
+
+@router.get("/api/user_files/{file_id}", response_model=UploadedFileRead)
+def get_file_details(file_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"Fetching details for file ID: {file_id}, user: {current_user.email}")
+
+    file_record = db.query(UploadedFile).filtert(
+        UploadedFile.owner_id == current_user.id,
+        UploadedFile.id == file_id,
+    ).first()
+
+    if not file_record:
+        logger.error(f"File ID {file_id} not found for user {current_user.email}")
+        raise HTTPException(status_code=404, detail="File not found or you do not have access to this file.")
+
+    file_preview = base64.b64decode(file_record.file_data).decode('utf-8') if file_record.file_data else None
+
+    return {
+        "id": file_record.id,
+        "file_name": file_record.file_name,
+        "uploaded_at": file_record.uploaded_at,
+        "analysis_result": file_record.analysis_result,
+        "file_preview": file_preview,
+        "uploaded_text": file_record.uploaded_text
+    }
 
 # --- CRUD ENDPOINTS ---
 
