@@ -1,6 +1,5 @@
 // src/components/LoginForm.js
 import React, { useState } from 'react';
-import NavBar from '../NavBar';
 import '../../styles/global.css';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +34,6 @@ const LoginForm = () => {
 
     return (
         <div className="gradient-background">
-            <NavBar />
             <div className="centered-content">
                 <div className="form-container">
                     <h2 className="text-center">Log In</h2>

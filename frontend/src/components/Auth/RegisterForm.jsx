@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import NavBar from '../NavBar';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/global.css';
@@ -36,7 +35,6 @@ const RegisterForm = () => {
 
     return (
         <div className="gradient-background">
-            <NavBar />
             <div className="centered-content">
                 <div className="form-container">
                     <h2 className="text-center">Sign Up</h2>

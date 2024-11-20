@@ -1,9 +1,18 @@
 // src/components/Home.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import '../styles/global.css';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Home = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            navigate("/dashboard");
+        }
+    }, [navigate]);
+
     return (
         <div className="gradient-background">
             <div className="centered-content">
