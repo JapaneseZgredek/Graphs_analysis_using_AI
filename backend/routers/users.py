@@ -1,23 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
+from backend.core.jwt_auth import create_access_token, get_current_user
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime
 from backend.core.database import get_db
 from backend.models.user import User
 from passlib.context import CryptContext
 from backend.core.logging_config import logger
-from jose import JWTError, jwt
 
 router = APIRouter()
 
 # Configuration of hashing passwords
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# JWT secret and expiration settings
-SECRET_KEY = "your_secret_key"  # Change this to a strong secret key
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # --- DTO MODELS ---
 class UserCreate(BaseModel):
@@ -54,13 +49,16 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
 # --- CRUD ENDPOINTS ---
+
+# GETTING CURRENT USER BASED ON JWT TOKEN
+@router.get("/users/me", response_model=UserRead)
+def get_current_user_details(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"Getting current user details: {current_user}")
+    if not current_user:
+        logger.error(f"User not found: {current_user}")
+        raise HTTPException(status_code=404, detail="User not found")
+    return current_user
 
 # LOGIN: Authenticate user and teturn JWT Token
 @router.post('/login', response_model=Token)
@@ -71,7 +69,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         logger.error(f"Invalid credentials for user: {user.email}")
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    access_token = create_access_token(data={"sub": db_user.email})
+    access_token = create_access_token(data={"sub": db_user.id})
     logger.info(f"User {user.email} successfully logged in")
     return {"access_token": access_token, "token_type": "bearer"}
 

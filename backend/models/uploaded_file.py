@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, LargeBinary
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, LargeBinary, Boolean
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from datetime import datetime
@@ -11,6 +11,8 @@ class UploadedFile(Base):
     file_data = Column(LargeBinary, nullable=False)
     analysis_result = Column(String(255), nullable=True)
     uploaded_at = Column(DateTime, default=datetime.now)
+    does_match = Column(Boolean, nullable=True)
+    uploaded_text = Column(String(255), nullable=True)
 
     # Relation with User table
     owner_id = Column(Integer, ForeignKey("users.id"))

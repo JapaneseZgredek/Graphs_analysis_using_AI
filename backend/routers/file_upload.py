@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from starlette.responses import FileResponse
-
+import base64
 from backend.models.uploaded_file import UploadedFile
 from backend.models.user import User
 from pydantic import BaseModel
@@ -17,9 +17,11 @@ class UploadedFileCreate(BaseModel):
     user_id: int
     file_name: str
     file_data: bytes
+    uploaded_text: Optional[str] = None
 
 class UploadedFileUpdate(BaseModel):
     analysis_result: Optional[str] = None
+    does_match: Optional[bool] = None
 
 class UploadedFileRead(BaseModel):
     id: int
@@ -30,37 +32,45 @@ class UploadedFileRead(BaseModel):
     class Config:
         from_attributes = True
 
+class UploadFileRequest(BaseModel):
+    user_id: int
+    file_name: str
+    file: str  # Base64-encoded file
+    uploaded_text: Optional[str]
+
 # --- CRUD ENDPOINTS ---
 
 # CREATE: Upload file
 @router.post('/files', response_model=UploadedFileRead)
-async def upload_image_to_database(
-        user_id: int,
-        file: UploadFile = File(...),
-        db: Session = Depends(get_db)):
+async def upload_image_to_database(request: UploadFileRequest, db: Session = Depends(get_db)):
+    logger.info(f"Received upload request: {request}")
 
-    logger.info('Uploading image to database')
-    #  File type validation
-    if not file.content_type.startswith('image/'):
-        logger.error('File type is not an image')
-        raise HTTPException(status_code=400, detail='Invalid file type. Please upload an image.')
+    # Dekodowanie pliku z base64
+    try:
+        file_data = base64.b64decode(request.file)
+    except Exception as e:
+        logger.error(f"Failed to decode base64 file: {e}")
+        raise HTTPException(status_code=400, detail="Invalid base64 file format")
 
-    user = db.query(User).filter(User.id == user_id).first()
+    # Walidacja użytkownika
+    user = db.query(User).filter(User.id == request.user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail=f'Cannot create file record with user id that doesnt exist: {user_id}.')
-    # Reading file binary data
-    file_data = await file.read()
+        logger.error(f"User with ID {request.user_id} not found")
+        raise HTTPException(status_code=404, detail="User not found")
 
+    # Tworzenie rekordu w bazie danych
     uploaded_file = UploadedFile(
-        file_name=file.filename,
+        file_name=request.file_name,
         file_data=file_data,
-        owner_id=user_id,
-        uploaded_at=datetime.now()
+        uploaded_text=request.uploaded_text,
+        owner_id=request.user_id,
+        uploaded_at=datetime.now(),
     )
     db.add(uploaded_file)
     db.commit()
     db.refresh(uploaded_file)
-    logger.info('Uploaded image to database successfully')
+
+    logger.info(f"File uploaded successfully: {uploaded_file.id}")
     return uploaded_file
 
 

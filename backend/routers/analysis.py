@@ -19,7 +19,7 @@ client = OpenAIClient(api_key=api_key)
 
 class AnalyzeImageDescriptionRequest(BaseModel):
     description: str
-    prompt_text: str = "Tell me if provided description and image of graph match each other"
+    prompt_text: str = "Tell me if provided description and image of graph match each other. if not tell me why"
 
 
 @router.post("/analyze_file/{file_id}")
@@ -61,8 +61,14 @@ def analyze_image_with_description(file_id: int, request: AnalyzeImageDescriptio
             mime_type="image/png"
         )
 
+        does_match = "True" in analysis_result
+
+        file_record.analysis_result = analysis_result
+        file_record.does_match = does_match
+        db.commit()
+
         return {"file_name": file_record.file_name, "description": request.description,
-                "analysis_result": analysis_result}
+                "analysis_result": analysis_result, "does_match": does_match}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
