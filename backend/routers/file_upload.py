@@ -1,3 +1,5 @@
+import hashlib
+
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from starlette.responses import FileResponse
@@ -43,25 +45,30 @@ class UploadFileRequest(BaseModel):
 # CREATE: Upload file
 @router.post('/files', response_model=UploadedFileRead)
 async def upload_image_to_database(request: UploadFileRequest, db: Session = Depends(get_db)):
-    logger.info(f"Received upload request: {request}")
 
-    # Dekodowanie pliku z base64
     try:
         file_data = base64.b64decode(request.file)
     except Exception as e:
         logger.error(f"Failed to decode base64 file: {e}")
         raise HTTPException(status_code=400, detail="Invalid base64 file format")
 
-    # Walidacja użytkownika
+    file_hash = hashlib.sha256(file_data).hexdigest()
+    logger.info(f"File hash calculated: {file_hash}")
+
+    existing_file = db.query(UploadedFile).filter(UploadedFile.file_hash == file_hash).first()
+    if existing_file:
+        logger.info(f"File with hash {file_hash} already exists in database: {existing_file}")
+        return existing_file
+
     user = db.query(User).filter(User.id == request.user_id).first()
     if not user:
         logger.error(f"User with ID {request.user_id} not found")
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Tworzenie rekordu w bazie danych
     uploaded_file = UploadedFile(
         file_name=request.file_name,
         file_data=file_data,
+        file_hash=file_hash,
         uploaded_text=request.uploaded_text,
         owner_id=request.user_id,
         uploaded_at=datetime.now(),

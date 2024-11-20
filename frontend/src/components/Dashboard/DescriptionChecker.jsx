@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import NavBar from '../NavBar';
 import '../../styles/global.css';
 
-const FileUploadTool = () => {
+const DescriptionChecker = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [error, setError] = useState("");
     const [textInput, setTextInput] = useState("");
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -103,11 +104,12 @@ const FileUploadTool = () => {
     };
 
     const handleAnalyzeImage = async (fileId) => {
+        setIsAnalyzing(true);
         try {
             const payload = {
                 description: textInput.trim(),
             };
-    
+
             console.log("Sending payload to analyze endpoint:", payload); // Loguj dane wysyłane do API
 
             const response = await fetch(
@@ -133,6 +135,8 @@ const FileUploadTool = () => {
         } catch (err) {
             console.error("Error during image analysis:", err.message);
             setError(err.message);
+        } finally {
+            setIsAnalyzing(false);
         }
     };
 
@@ -180,7 +184,7 @@ const FileUploadTool = () => {
                             className="btn btn-primary w-100 mt-3 animate-button"
                             onClick={handleUpload}
                         >
-                            {isUploading ? "Uploading...": "Upload"}
+                            {isUploading ? "Uploading...": isAnalyzing ? "Analyzing...": "Upload"}
                         </button>
                     )}
                     {analysisResult && (
@@ -195,4 +199,4 @@ const FileUploadTool = () => {
     );
 };
 
-export default FileUploadTool;
+export default DescriptionChecker;

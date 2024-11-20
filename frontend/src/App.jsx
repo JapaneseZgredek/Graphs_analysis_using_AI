@@ -3,7 +3,7 @@ import Home from "./pages/Home";
 import LoginForm from "./components/Auth/LoginForm";
 import RegisterForm from "./components/Auth/RegisterForm"
 import Dashboard from "./pages/Dashboard"
-import FileUploadTool from "./components/Dashboard/FileUploadTool";
+import DescriptionChecker from "./components/Dashboard/DescriptionChecker";
 const App = () => {
     return (
         <Router>
@@ -12,7 +12,7 @@ const App = () => {
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/register" element={<RegisterForm />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/upload" element={<FileUploadTool />} />
+                <Route path="/upload" element={<DescriptionChecker />} />
             </Routes>
         </Router>
     );

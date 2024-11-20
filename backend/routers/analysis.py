@@ -19,7 +19,12 @@ client = OpenAIClient(api_key=api_key)
 
 class AnalyzeImageDescriptionRequest(BaseModel):
     description: str
-    prompt_text: str = "Tell me if provided description and image of graph match each other. if not tell me why"
+    prompt_text: str = """
+        Tell me if provided description match with graph shown in image. If description does not match graph shown in image inform me about it,
+        and provide me with description what is really shown in image. Keep in mind that in description might be some giberish words such as
+        'BBB' or something like that, ignore them and if after ignoring them description still does not match graph shown in image just say that it does
+        not match and provide me with proper description
+    """
 
 
 @router.post("/analyze_file/{file_id}")

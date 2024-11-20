@@ -28,7 +28,7 @@ const NavBar = () => {
                                 className={({isActive}) => "nav-link" + (isActive ? " active" : "")}
                                 to="/upload"
                             >
-                                Upload Files
+                                Check Description
                             </NavLink>
                         </li>
                         <li className="nav-item">
