@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import NavBar from '../NavBar';
 import '../../styles/global.css';
 
@@ -10,6 +10,23 @@ const DescriptionChecker = () => {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [displayedText, setDisplayedText] = useState("")
+    const [textIndex, setTextIndex] = useState(0);
+
+    const fullDescription = 'Welcome to Validate Description tool! ' +
+                                    'Here, you can upload an infographic file with description of what is ' +
+                                    ' shown in it, then check with power our AI-powered analysis tool whether ' +
+                                    ' description match infographic';
+
+    useEffect(() => {
+        if (textIndex < fullDescription.length) {
+            const timer = setTimeout(() => {
+                setDisplayedText((prev) => prev + fullDescription[textIndex]);
+                setTextIndex((prev) => prev + 1);
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [textIndex, fullDescription]);
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -143,6 +160,11 @@ const DescriptionChecker = () => {
     return (
         <div className="gradient-background">
             <NavBar />
+            {!previewUrl &&
+                <div className="info-box text-center">
+                    <p>{displayedText}</p>
+                </div>
+            }
             <div className="centered-content">
                 <div
                     className={`upload-container ${

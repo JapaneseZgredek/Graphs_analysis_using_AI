@@ -23,6 +23,7 @@ body, html {
     align-items: center;
     text-align: center;
     margin-top: 50px;
+    flex-direction: column;
 }
 
 .upload-container {
@@ -298,4 +299,21 @@ body, html {
         transform: scale(1);
         opacity: 1;
     }
+}
+
+.info-box {
+    position: absolute; /* Aby umożliwić dokładne ustawienie */
+    top: 120px; /* Ustala odstęp od górnej krawędzi (np. od NavBar) */
+    left: 50%; /* Wyrównanie poziome */
+    transform: translateX(-50%); /* Wyśrodkowanie w poziomie */
+    width: 100%;
+    max-width: 600px; /* Maksymalna szerokość */
+    padding: 1.5rem; /* Wewnętrzne odstępy */
+    background: rgba(255, 255, 255, 0.15); /* Półprzezroczyste tło */
+    border-radius: 12px; /* Zaokrąglenie rogów */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Cień dla estetyki */
+    text-align: center; /* Wyrównanie tekstu */
+    font-size: 16px; /* Rozmiar czcionki */
+    line-height: 1.6; /* Odstęp między liniami */
+    z-index: 1; /* Aby mieć pewność, że znajduje się nad innymi elementami */
 }

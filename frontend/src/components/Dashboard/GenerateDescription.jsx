@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import NavBar from '../NavBar';
 import '../../styles/global.css';
 
@@ -9,6 +9,23 @@ const GenerateDescription = () => {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [displayedText, setDisplayedText] = useState("");
+    const [textIndex, setTextIndex] = useState(0);
+
+    const fullDescription = 'Welcome to the Generate Description tool! ' +
+        'Here, you can upload an infographic file to automatically generate a meaningful description ' +
+        'using our AI-powered analysis. Simply select an image and click "Upload & Analyze".';
+
+    useEffect(() => {
+        if (textIndex < fullDescription.length) {
+            const timer = setTimeout(() => {
+                setDisplayedText((prev) => prev + fullDescription[textIndex]);
+                setTextIndex((prev) => prev + 1);
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [textIndex, fullDescription]);
+
 
     const handleFileChange = (event) => {
         const file = event.target.files[0];
@@ -130,7 +147,12 @@ const GenerateDescription = () => {
 
     return (
         <div className="gradient-background">
-            <NavBar />
+            <NavBar/>
+            {!previewUrl &&
+                <div className="info-box">
+                    <p>{displayedText}</p>
+                </div>
+            }
             <div className="centered-content">
                 <div
                     className={`upload-container ${
@@ -145,7 +167,7 @@ const GenerateDescription = () => {
                             onChange={handleFileChange}
                             accept="image/*"
                         />
-                        {error && <div className="invalid-feedback text-center">{error}</div> }
+                        {error && <div className="invalid-feedback text-center">{error}</div>}
                     </div>
                     {previewUrl && (
                         <div className="image-preview mt-4">
