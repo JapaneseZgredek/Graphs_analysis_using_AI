@@ -22,14 +22,17 @@ class AnalyzeImageDescriptionRequest(BaseModel):
     prompt_text: str = """
         Tell me if provided description match with graph shown in image. If description does not match graph shown in image inform me about it,
         and provide me with description what is really shown in image. Keep in mind that in description might be some giberish words such as
-        'BBB' or something like that, ignore them and if after ignoring them description still does not match graph shown in image just say that it does
-        not match and provide me with proper description
+        'BBB' or something like that, ignore them and if after ignoring them description still does not match graph shown in image just say 
+        'The description provided does not match and image' and also provide me with proper description. Keep in mind that uploaded image might not be graph image in that case just answer 
+        'The provided image does not show any graph data'.
     """
 
 
 @router.post("/analyze_file/{file_id}")
 def analyze_file(file_id: int,
-                 prompt_text: str = "Analyze this graph and provide insights as you would be the best Data Analyst in the world!",
+                 prompt_text: str = """
+                 Analyze this graph and provide insights as you would be the best Data Analyst in the world!
+                 Keep in mind that uploaded image might not be graph image in that case just asnwer 'The provided image does not show any graph data'.""",
                  db: Session = Depends(get_db)):
     try:
         file_record = db.query(UploadedFile).filter(UploadedFile.id == file_id).first()

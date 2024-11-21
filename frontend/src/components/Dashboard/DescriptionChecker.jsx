@@ -53,6 +53,8 @@ const DescriptionChecker = () => {
         setError("");
         setSelectedFile(file);
         setPreviewUrl(URL.createObjectURL(file));
+        setTextInput("");
+        setAnalysisResult(null);
     };
 
     const handleUpload = async () => {
@@ -205,13 +207,14 @@ const DescriptionChecker = () => {
                         <button
                             className="btn btn-primary w-100 mt-3 animate-button"
                             onClick={handleUpload}
+                            disabled={isUploading || isAnalyzing}
                         >
                             {isUploading ? "Uploading...": isAnalyzing ? "Analyzing...": "Upload"}
                         </button>
                     )}
                     {analysisResult && (
                         <div className="mt-4">
-                            <h3>AnalysisResult: </h3>
+                            <h3>Analysis Result: </h3>
                             <p>{analysisResult}</p>
                         </div>
                     )}
