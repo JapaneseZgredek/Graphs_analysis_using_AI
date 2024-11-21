@@ -105,20 +105,64 @@ const Dashboard = () => {
                         </button>
                         <h3 className="modal-header">File Details</h3>
                         <div className="modal-body">
-                            <img
-                                src={selectedFile.file_preview}
-                                alt={selectedFile.file_name}
-                                className="modal-image"
-                            />
-                            <p><strong>File Name:</strong> {selectedFile.file_name}</p>
-                            <p><strong>Uploaded At:</strong> {new Date(selectedFile.uploaded_at).toLocaleString()}</p>
-                            {selectedFile.analysis_result && (
-                                <p><strong>Analysis Result:</strong> {selectedFile.analysis_result}</p>
-                            )}
-                            {selectedFile.uploaded_text && (
-                                <p><strong>Description:</strong> {selectedFile.uploaded_text}</p>
-                            )}
+                            <div className="image-container">
+                                <img
+                                    src={selectedFile.file_preview}
+                                    alt={selectedFile.file_name}
+                                    className="modal-image"
+                                />
+                            </div>
                         </div>
+
+                        <div className="data-container">
+                            <label>File Name</label>
+                            <input type="text" value={selectedFile.file_name} readOnly />
+                        </div>
+
+                        <div className="data-container">
+                            <label>Uploaded At</label>
+                            <input
+                                type="text"
+                                value={new Date(selectedFile.uploaded_at).toLocaleString()}
+                                readOnly
+                            />
+                        </div>
+
+                        {/* Wynik analizy */}
+                        {selectedFile.analysis_result && (
+                            <div className="data-container">
+                                <label>Analysis Result</label>
+                                <textarea
+                                    className="auto-expand"
+                                    value={selectedFile.analysis_result}
+                                    readOnly
+                                    style={{
+                                        height: `${Math.min(
+                                            selectedFile.analysis_result.split("\n").length * 24,
+                                            400
+                                        )}px`, // Oblicz wysokość na podstawie liczby wierszy
+                                    }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Tekst przesłany przez użytkownika */}
+                        {selectedFile.uploaded_text && (
+                            <div className="data-container">
+                                <label>Description</label>
+                                <textarea
+                                    className="auto-expand"
+                                    value={selectedFile.uploaded_text}
+                                    readOnly
+                                    style={{
+                                        height: `${Math.min(
+                                            selectedFile.uploaded_text.split("\n").length * 24,
+                                            400
+                                        )}px`,
+                                    }}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
