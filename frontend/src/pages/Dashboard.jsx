@@ -124,7 +124,7 @@ const Dashboard = () => {
             </div>
             {isModalOpen && selectedFile && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
+                    <div className="modal-content" style={{ borderRadius: "20px" }}>
                         <button className="close-modal" onClick={closeModal}>
                             &times;
                         </button>
