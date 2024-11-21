@@ -138,13 +138,17 @@ body, html {
 }
 
 .file-tile {
-    position: relative;
+    position: relative; /* Allow precise placement of child elements */
     border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 10px;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     text-align: center;
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    justify-content: space-between; /* Ensure spacing between image and name */
+    height: 200px; /* Uniform height for all tiles */
     transition: transform 0.2s ease-in-out;
     cursor: pointer;
 }
@@ -155,15 +159,21 @@ body, html {
 
 .file-preview-img {
     max-width: 100%;
-    height: auto;
-    border-radius: 8px;
+    max-height: 100px; /* Limit image height */
+    object-fit: contain; /* Maintain image aspect ratio */
+    margin: auto 0; /* Center image vertically */
+    flex-grow: 1; /* Allow image to occupy remaining vertical space */
 }
 
 .file-name {
-    margin-top: 10px;
+    margin-top: auto; /* Push the name to the bottom */
+    padding: 5px 0;
     font-size: 14px;
+    font-weight: bold;
     color: white;
-    word-wrap: break-word;
+    text-align: center;
+    word-wrap: break-word; /* Handle long file names */
+    border-radius: 4px;
 }
 
 /* Delete Icon */

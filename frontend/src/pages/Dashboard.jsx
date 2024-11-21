@@ -46,25 +46,25 @@ const Dashboard = () => {
     const handleDeleteFile = async (fileId) => {
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch (`http://127.0.0.1:8000/api/files/${fileId}`, {
+            const response = await fetch(`http://127.0.0.1:8000/api/files/${fileId}`, {
                 method: "DELETE",
                 headers: {
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${token}`,
                 },
             });
 
             if (!response.ok) {
-                throw new Error("Failed to delete file.")
+                throw new Error("Failed to delete file.");
             }
 
-            fetchUserFiles();
+            await fetchUserFiles();
         } catch (err) {
             console.error("Error deleting file:", err.message);
             setError(err.message);
         }
     };
 
-     return (
+    return (
         <div className="gradient-background">
             <NavBar />
             <div className="dashboard-container">
@@ -75,19 +75,22 @@ const Dashboard = () => {
                         <div
                             key={file.id}
                             className="file-tile"
+                            onClick={() => handleTileClick(file)} // Entire tile clickable
                         >
                             <div
                                 className="delete-icon"
-                                onClick={() => handleDeleteFile(file.id)}
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent modal opening when clicking delete
+                                    handleDeleteFile(file.id);
+                                }}
                                 title="Delete File"
                             >
                                 &times;
                             </div>
                             <img
-                                src={file.file_preview}
+                                src={file.file_preview || "placeholder-image-url.png"} // Fallback image if file_preview is missing
                                 alt={file.file_name}
                                 className="file-preview-img"
-                                onClick={() => handleTileClick(file)}
                             />
                             <p className="file-name">{file.file_name}</p>
                         </div>

@@ -49,17 +49,19 @@ def get_user_files(db: Session = Depends(get_db), current_user: User = Depends(g
     logger.info(f"Fetching files for user: {current_user.email}")
     user_files = db.query(UploadedFile).filter(UploadedFile.owner_id == current_user.id).all()
 
-    # Dodawanie podglądu obrazu w formacie Base64
     files_with_preview = []
     for file in user_files:
-        file_preview = base64.b64encode(file.file_data).decode('utf-8')
+        file_preview = (
+            f"data:image/png;base64,{base64.b64encode(file.file_data).decode('utf-8')}"
+            if file.file_data else None
+        )
         files_with_preview.append(
             UploadedFileRead(
                 id=file.id,
                 file_name=file.file_name,
                 uploaded_at=file.uploaded_at,
                 analysis_result=file.analysis_result,
-                file_preview=f"data:image/png;base64,{file_preview}",
+                file_preview=file_preview,
                 uploaded_text=file.uploaded_text
             )
         )
@@ -95,7 +97,6 @@ def get_file_details(file_id: int, current_user: User = Depends(get_current_user
 # CREATE: Upload file
 @router.post('/files', response_model=UploadedFileRead)
 async def upload_image_to_database(request: UploadFileRequest, db: Session = Depends(get_db)):
-
     try:
         file_data = base64.b64decode(request.file)
     except Exception as e:
@@ -113,8 +114,8 @@ async def upload_image_to_database(request: UploadFileRequest, db: Session = Dep
             file_name=existing_file.file_name,
             uploaded_at=existing_file.uploaded_at,
             analysis_result=existing_file.analysis_result,
-            file_preview=f"data:image/png;base64,{base64.b64encode(existing_file.file_data).decode()}",
-            uploaded_text=existing_file.uploaded_text,
+            file_preview=f"data:image/png;base64,{base64.b64encode(existing_file.file_data).decode('utf-8')}",
+            uploaded_text=existing_file.uploaded_text
         )
 
     user = db.query(User).filter(User.id == request.user_id).first()
@@ -135,15 +136,13 @@ async def upload_image_to_database(request: UploadFileRequest, db: Session = Dep
     db.refresh(uploaded_file)
 
     logger.info(f"File uploaded successfully: {uploaded_file.id}")
-
-    # Add the file preview to the response
     return UploadedFileRead(
         id=uploaded_file.id,
         file_name=uploaded_file.file_name,
         uploaded_at=uploaded_file.uploaded_at,
         analysis_result=uploaded_file.analysis_result,
-        file_preview=f"data:image/png;base64,{base64.b64encode(uploaded_file.file_data).decode()}",
-        uploaded_text=uploaded_file.uploaded_text,
+        file_preview=f"data:image/png;base64,{base64.b64encode(uploaded_file.file_data).decode('utf-8')}",
+        uploaded_text=uploaded_file.uploaded_text
     )
 
 
@@ -184,7 +183,7 @@ def update_file(file_id: int, updated_data: UploadedFileUpdate, db: Session = De
 
 
 # DELETE: Delete file from database
-@router.delete('/files/{file_id}', response_model=UploadedFileRead)
+@router.delete('/files/{file_id}', response_model=dict)
 def delete_file(file_id: int, db: Session = Depends(get_db)):
     logger.info(f'Deleting file with given id {file_id}')
     uploaded_file = db.query(UploadedFile).filter(UploadedFile.id == file_id).first()
@@ -195,8 +194,8 @@ def delete_file(file_id: int, db: Session = Depends(get_db)):
 
     db.delete(uploaded_file)
     db.commit()
-    logger.info('File with given id {file_id} deleted successfully')
-    return uploaded_file
+    logger.info(f'File with given id {file_id} deleted successfully')
+    return {"detail": "File deleted successfully"}
 
 # READ ALL: Reads all file records
 @router.get('/files', response_model=List[UploadedFileRead])
