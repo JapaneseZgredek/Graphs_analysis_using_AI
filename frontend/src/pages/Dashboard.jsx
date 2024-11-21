@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import NavBar from '../components/NavBar';
 import '../styles/global.css';
 
@@ -7,6 +7,10 @@ const Dashboard = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [error, setError] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+
+    const analysisResultRef = useRef(null);
+    const uploadedTextRef = useRef(null);
 
     const fetchUserFiles = async () => {
         try {
@@ -64,6 +68,27 @@ const Dashboard = () => {
         }
     };
 
+    useEffect(() => {
+        if (isModalOpen) {
+            adjustTextareaHeight();
+        }
+    }, [selectedFile, isModalOpen]);
+
+    const adjustTextareaHeight = () => {
+        if (selectedFile) {
+            if (analysisResultRef.current && selectedFile.analysis_result) {
+                const lines = selectedFile.analysis_result.split("\n").length;
+                const height = Math.min(lines * 24, 400);
+                analysisResultRef.current.style.height = `${height}px`;
+            }
+            if (uploadedTextRef.current && selectedFile.uploaded_text) {
+                const lines = selectedFile.uploaded_text.split("\n").length;
+                const height = Math.min(lines * 24, 400);
+                uploadedTextRef.current.style.height = `${height}px`;
+            }
+        }
+    };
+
     return (
         <div className="gradient-background">
             <NavBar />
@@ -116,7 +141,7 @@ const Dashboard = () => {
 
                         <div className="data-container">
                             <label>File Name</label>
-                            <input type="text" value={selectedFile.file_name} readOnly />
+                            <input type="text" value={selectedFile.file_name} readOnly style={{ width: "100%"}} />
                         </div>
 
                         <div className="data-container">
@@ -128,19 +153,19 @@ const Dashboard = () => {
                             />
                         </div>
 
-                        {/* Wynik analizy */}
                         {selectedFile.analysis_result && (
                             <div className="data-container">
                                 <label>Analysis Result</label>
                                 <textarea
+                                    ref={analysisResultRef}
                                     className="auto-expand"
                                     value={selectedFile.analysis_result}
                                     readOnly
                                     style={{
                                         height: `${Math.min(
-                                            selectedFile.analysis_result.split("\n").length * 24,
+                                            selectedFile.uploaded_text.split("\n").length * 24,
                                             400
-                                        )}px`, // Oblicz wysokość na podstawie liczby wierszy
+                                        )}px`,
                                     }}
                                 />
                             </div>
@@ -151,6 +176,7 @@ const Dashboard = () => {
                             <div className="data-container">
                                 <label>Description</label>
                                 <textarea
+                                    ref={uploadedTextRef}
                                     className="auto-expand"
                                     value={selectedFile.uploaded_text}
                                     readOnly
