@@ -4,11 +4,13 @@ import '../../styles/global.css';
 
 const GenerateDescription = () => {
     const [selectedFile, setSelectedFile] = useState(null);
+    const [imageUrl, setImageUrl] = useState("");
     const [previewUrl, setPreviewUrl] = useState(null);
     const [error, setError] = useState("");
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [inputType, setInputType] = useState("file");
     const [displayedText, setDisplayedText] = useState("");
     const [textIndex, setTextIndex] = useState(0);
 
@@ -52,11 +54,70 @@ const GenerateDescription = () => {
         setError("");
         setSelectedFile(file);
         setPreviewUrl(URL.createObjectURL(file));
+        setAnalysisResult(null);
+    };
+
+    const validateImageUrl = async (url) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true); // Valid image
+            img.onerror = () => resolve(false); // Invalid image
+            img.src = url;
+        });
+    };
+
+    const handleUrlInput = async (e) => {
+        const url = e.target.value;
+        setImageUrl(url);
+        setSelectedFile(null);
+
+        if (url.trim() === "") {
+            setPreviewUrl(null);
+            setError("Please enter a valid image URL.");
+            return;
+        }
+
+        const isValid = await validateImageUrl(url);
+        if (isValid) {
+            setPreviewUrl(url);
+            setError("");
+        } else {
+            setPreviewUrl(null);
+            setError("Please enter a valid image URL.");
+        }
+    };
+
+    const convertFileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const convertUrlToBase64 = async (url) => {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error("Failed to fetch the image from the URL.");
+            }
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(",")[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (error) {
+            console.log("Error converting URL to Base64: ", error.message);
+            throw new Error("Failed to convert URL to Base64.");
+        }
     };
 
     const handleUploadAndAnalyze = async () => {
-        if (!selectedFile) {
-            setError("Pleaser provide an image.")
+        if (!selectedFile && !imageUrl.trim()) {
+            setError("Please provide an image file or a valid URL.");
             return;
         }
 
@@ -66,7 +127,7 @@ const GenerateDescription = () => {
         try {
             const token = localStorage.getItem("token");
             const userResponse = await fetch("http://127.0.0.1:8000/api/users/me", {
-                headers: { Authorization: `Bearer ${token}`}
+                headers: { Authorization: `Bearer ${token}` },
             });
 
             if (!userResponse.ok) {
@@ -76,39 +137,40 @@ const GenerateDescription = () => {
             const userData = await userResponse.json();
             const userId = userData.id;
 
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-                const base64File = reader.result.split(",")[1];
+            let base64File;
 
-                const payload = {
-                    user_id: userId,
-                    file_name: selectedFile.name,
-                    uploaded_text: "",
-                    file: base64File,
-                };
+            if (selectedFile) {
+                base64File = await convertFileToBase64(selectedFile);
+            } else if (imageUrl.trim()) {
+                base64File = await convertUrlToBase64(imageUrl.trim());
+            }
 
-                console.log("Payload being sent")
-
-                const response = await fetch("http://127.0.0.1:8000/api/files", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || "Failed to upload file");
-                }
-
-                const data = await response.json();
-                console.log("File uploaded successfully", data);
-
-                await handleAnalyzeFile(data.id);
+            const payload = {
+                user_id: userId,
+                file_name: selectedFile ? selectedFile.name : "image_from_url",
+                uploaded_text: "",
+                file: base64File,
             };
 
-            reader.readAsDataURL(selectedFile);
+            console.log("Payload being sent:", payload);
+
+            const response = await fetch("http://127.0.0.1:8000/api/files", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || "Failed to upload file");
+            }
+
+            const data = await response.json();
+            console.log("File uploaded successfully", data);
+
+            await handleAnalyzeFile(data.id);
         } catch (err) {
             console.error("Error during file upload:", err.message);
             setError(err.message);
@@ -161,12 +223,54 @@ const GenerateDescription = () => {
                 >
                     <h2 className="text-center">Generate Description</h2>
                     <div className="mb-3">
-                        <input
-                            type="file"
-                            className={`form-control ${error ? "is-invalid" : ""}`}
-                            onChange={handleFileChange}
-                            accept="image/*"
-                        />
+                        <div className="toggle-input">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="inputType"
+                                    value="file"
+                                    checked={inputType === "file"}
+                                    onChange={() => {
+                                        setInputType("file");
+                                        setImageUrl("");
+                                        setPreviewUrl(null);
+                                        setAnalysisResult(null);
+                                    }}
+                                />
+                                Upload File
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="inputType"
+                                    value="url"
+                                    checked={inputType === "url"}
+                                    onChange={() => {
+                                        setInputType("url");
+                                        setSelectedFile(null);
+                                        setPreviewUrl(null)
+                                        setAnalysisResult(null);
+                                    }}
+                                />
+                                Enter URL
+                            </label>
+                        </div>
+                        {inputType === "file" ? (
+                            <input
+                                type="file"
+                                className={`form-control ${error ? "is-invalid" : ""}`}
+                                onChange={handleFileChange}
+                                accept="image/*"
+                            />
+                        ) : (
+                            <input
+                                type="text"
+                                className={`form-control ${error ? "is-invalid" : ""}`}
+                                placeholder="Enter image URL"
+                                value={imageUrl}
+                                onChange={handleUrlInput}
+                            />
+                        )}
                         {error && <div className="invalid-feedback text-center">{error}</div>}
                     </div>
                     {previewUrl && (
