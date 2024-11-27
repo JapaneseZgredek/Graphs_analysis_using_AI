@@ -70,7 +70,7 @@ TO DO
    ```
 3. Ustaw zmienne środowiskowe w `.env`:
    ```env
-   DATABASE_URL=sqlite:///./test.db
+   TWITTER_BEARER_TOKEN=twoj_twitter_bearer
    SECRET_KEY=twoj_sekret
    OPENAI_API_KEY=twoj_klucz_openai
    ```
