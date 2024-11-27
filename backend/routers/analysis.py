@@ -9,7 +9,14 @@ from dotenv import load_dotenv
 from backend.routers.file_upload import update_file, UploadedFileUpdate
 
 router = APIRouter()
-
+"""
+ - Znaleźć publikacje naukową która mówi o zabezpieczaniu promptów
+ - Czytaj papiery naukowe pod kątem szukania dziur w swojej własnej pracy, i na podstawie niej dalej napraw ten problem.
+ Jest to będzie dobrze punktowane mam bibliografie mam cytowania i poprawie implementacje. 'Oryginalnie było X ale napisane
+ było że Y działa lepiej, dlatego zmieniłem na działanie Y.' <- Takie coś w inzynierce mega spoko
+ - Warto opisać rzeczy które nie wyszły i jakie wnioski z tego wyciągnałem 
+ - Wybór AI do robienia descirption check i generate description np. Bing
+"""
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
@@ -21,7 +28,7 @@ class AnalyzeImageDescriptionRequest(BaseModel):
     description: str
     prompt_text: str = """
         Tell me if provided description match with graph shown in image. If description does not match graph shown in image inform me about it,
-        and provide me with description what is really shown in image. Keep in mind that in description might be some giberish words such as
+        and provide me with description what is really shown in image. Keep in mind that in description might be some gibberish words such as
         'BBB' or something like that, ignore them and if after ignoring them description still does not match graph shown in image just say 
         'The description provided does not match and image' and also provide me with proper description. Keep in mind that uploaded image might not be graph image in that case just answer 
         'The provided image does not show any graph data'.
@@ -48,7 +55,7 @@ def analyze_file(file_id: int,
         updated_data.analysis_result = analysis_result
         update_file(db=db, file_id=file_id, updated_data=updated_data)
         return {"file_name": file_record.file_name, "analysis_result": analysis_result}
-    except Exception as e:
+    except Exception as e:  # Do wyspecjalizowania exception
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()

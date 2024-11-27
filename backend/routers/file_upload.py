@@ -1,6 +1,6 @@
 import hashlib
 
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Query
 from sqlalchemy.orm import Session
 from starlette.responses import FileResponse
 import base64
@@ -12,6 +12,8 @@ from datetime import datetime
 from backend.core.database import get_db
 from backend.core.logging_config import logger
 from backend.core.jwt_auth import JWTError, get_current_user
+import os
+import requests
 
 router = APIRouter()
 
@@ -42,6 +44,60 @@ class UploadFileRequest(BaseModel):
     file_name: str
     file: str  # Base64-encoded file
     uploaded_text: Optional[str]
+
+class TwitterDataRequest(BaseModel):
+    url: str  # Full URL of the Twitter post
+    tweet_id: str  # Extracted tweet ID from the URL
+
+@router.post("/twitter_data")
+def fetch_twitter_data(request: TwitterDataRequest):
+    """
+    Fetch image and description from Twitter API.
+    """
+    BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")  # Your Bearer Token from the environment
+
+    # Validate BEARER_TOKEN is present
+    if not BEARER_TOKEN:
+        raise HTTPException(
+            status_code=500, detail="Twitter API integration is not configured properly."
+        )
+
+    headers = {
+        "Authorization": f"Bearer {BEARER_TOKEN}"
+    }
+
+    # Extract the Tweet ID from the request
+    tweet_id = request.tweet_id
+
+    try:
+        # Make request to Twitter API
+        twitter_api_url = (
+            f"https://api.twitter.com/2/tweets/{tweet_id}"
+            f"?expansions=attachments.media_keys&media.fields=url&tweet.fields=text"
+        )
+        response = requests.get(twitter_api_url, headers=headers)
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Failed to fetch tweet details")
+
+        tweet_data = response.json()
+
+        # Extract the image URL and text
+        tweet_text = tweet_data["data"]["text"]
+        media = tweet_data.get("includes", {}).get("media", [])
+        if not media or media[0]["type"] != "photo":
+            raise HTTPException(status_code=404, detail="Image not found in the Twitter post.")
+
+        image_url = media[0]["url"]
+
+        return {
+            "image_url": image_url,
+            "tweet_text": tweet_text,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
 
 
 @router.get("/user_files", response_model=list[UploadedFileRead])
